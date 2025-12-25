@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Patients - HRMS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-light">
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Patients</h2>
+    <div>
+      <a class="btn btn-outline-primary" href="/export/patients">Export Patients CSV</a>
+      <a class="btn btn-secondary" href="/">Dashboard</a>
+    </div>
+  </div>
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, msg in messages %}
+        <div class="alert alert-{{ 'danger' if category=='danger' else 'success' }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+  <form action="/patients/add" method="post" class="row g-2 mb-3">
+    <div class="col"><input class="form-control" name="name" placeholder="Name" required></div>
+    <div class="col"><input class="form-control" name="age" placeholder="Age" type="number"></div>
+    <div class="col">
+      <select class="form-control" name="gender">
+        <option>Male</option><option>Female</option><option>Other</option>
+      </select>
+    </div>
+    <div class="col"><input class="form-control" name="admission_reason" placeholder="Reason"></div>
+    <div class="col"><button class="btn btn-primary">Add</button></div>
+  </form>
+  <table class="table table-bordered">
+    <tr><th>ID</th><th>Name</th><th>Age</th><th>Gender</th><th>Reason</th><th>Bed</th><th>Actions</th></tr>
+    {% for p in patients %}
+    <tr>
+      <td>{{ p['id'] }}</td>
+      <td>{{ p['name'] }}</td>
+      <td>{{ p['age'] }}</td>
+      <td>{{ p['gender'] }}</td>
+      <td>{{ p['admission_reason'] }}</td>
+      <td>
+        {% if p['bed_id'] %}
+          <span class="badge bg-danger">Booked (Bed {{ p['bed_id'] }})</span>
+        {% else %}
+          <a href="/patients/assign/{{ p['id'] }}" class="btn btn-success btn-sm">Assign Bed</a>
+        {% endif %}
+      </td>
+      <td>
+        <form action="/patients/discharge/{{ p['id'] }}" method="post" style="display:inline">
+          <button class="btn btn-danger btn-sm">Discharge</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+</body>
+</html>

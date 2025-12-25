@@ -1,0 +1,6 @@
+body{font-family:Arial, Helvetica, sans-serif; margin:0; padding:0;}
+.container{max-width:1100px;margin:20px auto;background:transparent;}
+.card{border-radius:6px;}
+body.dark { background:#0f1720; color:#e6eef8; }
+.card.dark { background:#111827; color:#e6eef8; border-color:#2b3948; }
+.table-danger { background: #ffe6e6 !important; }
