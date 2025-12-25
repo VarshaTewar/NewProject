@@ -1,24 +1,172 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Assign Bed</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
-<body class="bg-light">
-<div class="container mt-4">
-  <h3 class="text-primary">Assign Bed to {{ patient['name'] }}</h3>
-  <form method="POST" action="/patients/assign/save" class="mt-3">
-    <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
-    <label class="form-label">Select Bed</label>
-    <select class="form-control" name="bed_id" required>
-      {% for b in beds %}
-      <option value="{{ b['id'] }}">Ward {{ b['ward'] }} - Bed {{ b['bed_number'] }}</option>
-      {% endfor %}
-    </select>
-    <button class="btn btn-primary mt-3">Book Bed</button>
-    <a class="btn btn-secondary mt-3" href="/patients">Cancel</a>
-  </form>
+{% extends "layout.html" %}
+
+{% block title %}Assign Bed - Hospital Harmony{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <!-- Back Button -->
+    <a href="/patients" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6 transition">
+        <i class="fas fa-arrow-left mr-2"></i>
+        Back to Patients
+    </a>
+
+    <!-- Main Card -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-8 text-white">
+            <div class="flex items-center">
+                <div class="w-16 h-16 bg-white bg-opacity-20 rounded-full flex items-center justify-center mr-4">
+                    <i class="fas fa-bed text-3xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold">Assign Bed to Patient</h1>
+                    <p class="text-blue-100 mt-1">Select an available bed for {{ patient['name'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="p-6">
+            <!-- Patient Info -->
+            <div class="bg-blue-50 rounded-lg p-4 mb-6 border border-blue-100">
+                <h3 class="text-sm font-semibold text-blue-900 mb-3 flex items-center">
+                    <i class="fas fa-user-injured mr-2"></i>
+                    Patient Information
+                </h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-xs text-blue-600 font-medium">Patient Name</p>
+                        <p class="text-sm font-semibold text-blue-900">{{ patient['name'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-blue-600 font-medium">Patient ID</p>
+                        <p class="text-sm font-semibold text-blue-900">#{{ patient['id'] }}</p>
+                    </div>
+                    {% if patient['age'] %}
+                    <div>
+                        <p class="text-xs text-blue-600 font-medium">Age</p>
+                        <p class="text-sm font-semibold text-blue-900">{{ patient['age'] }} years</p>
+                    </div>
+                    {% endif %}
+                    {% if patient['gender'] %}
+                    <div>
+                        <p class="text-xs text-blue-600 font-medium">Gender</p>
+                        <p class="text-sm font-semibold text-blue-900">{{ patient['gender'] }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Available Beds -->
+            <form method="POST" action="/patients/assign/save" class="space-y-6">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-900 mb-3 flex items-center">
+                        <i class="fas fa-bed mr-2 text-blue-600"></i>
+                        Select Available Bed
+                    </label>
+
+                    {% if beds %}
+                        <div class="space-y-3">
+                            {% for b in beds %}
+                            <label class="block">
+                                <input type="radio" name="bed_id" value="{{ b['id'] }}" required class="peer sr-only">
+                                <div class="peer-checked:border-blue-500 peer-checked:bg-blue-50 border-2 border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-300 transition">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                                                <i class="fas fa-bed text-blue-600 text-xl"></i>
+                                            </div>
+                                            <div>
+                                                <h4 class="font-semibold text-gray-900">Ward: {{ b['ward'] }}</h4>
+                                                <p class="text-sm text-gray-600">Bed Number: {{ b['bed_number'] }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="peer-checked:block hidden">
+                                            <div class="w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                                                <i class="fas fa-check text-white text-xs"></i>
+                                            </div>
+                                        </div>
+                                        <div class="peer-checked:hidden block">
+                                            <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                Available
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                            <i class="fas fa-exclamation-triangle text-yellow-600 text-3xl mb-3"></i>
+                            <p class="text-yellow-800 font-semibold">No Available Beds</p>
+                            <p class="text-yellow-700 text-sm mt-1">All beds are currently occupied. Please wait for a bed to become available.</p>
+                            <a href="/beds" class="inline-block mt-4 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition">
+                                <i class="fas fa-bed mr-1"></i> Manage Beds
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Action Buttons -->
+                {% if beds %}
+                <div class="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+                    <a href="/patients" class="px-6 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition font-medium">
+                        <i class="fas fa-times mr-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium shadow-sm">
+                        <i class="fas fa-check mr-1"></i> Assign Bed
+                    </button>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-start">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 text-sm">Bed Assignment</h4>
+                    <p class="text-xs text-gray-600 mt-1">Once assigned, the bed will be marked as occupied and linked to this patient.</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
+            <div class="flex items-start">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                    <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 text-sm">Patient Discharge</h4>
+                    <p class="text-xs text-gray-600 mt-1">When the patient is discharged, the bed will automatically become available.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-</body>
-</html>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Add visual feedback when radio button is selected
+document.querySelectorAll('input[name="bed_id"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.querySelectorAll('input[name="bed_id"]').forEach(r => {
+            const div = r.parentElement.querySelector('div');
+            if (r.checked) {
+                div.classList.add('ring-2', 'ring-blue-500');
+            } else {
+                div.classList.remove('ring-2', 'ring-blue-500');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
