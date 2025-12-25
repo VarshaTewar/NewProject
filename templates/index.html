@@ -1,108 +1,152 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Hospital Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="bg-light">
-<nav class="navbar navbar-expand-lg navbar-light bg-primary mb-4">
-  <div class="container-fluid">
-    <a class="navbar-brand text-white" href="/">🏥 Hospital System</a>
-    <div class="navbar-nav">
-      <a class="nav-link text-white" href="/patients">Patients</a>
-      <a class="nav-link text-white" href="/beds">Beds</a>
-      <a class="nav-link text-white" href="/staff">Staff</a>
-      <a class="nav-link text-white" href="/inventory">Inventory</a>
-      <a class="nav-link text-white" href="/export/patients">Export Patients</a>
-    </div>
-    <div>
-      <button id="darkToggle" class="btn btn-light me-2">Dark</button>
-      <a href="/logout" class="btn btn-light">Logout</a>
-    </div>
-  </div>
-</nav>
-<div class="container">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-      {% for category, msg in messages %}
-        <div class="alert alert-{{ 'danger' if category=='danger' else 'success' }}">{{ msg }}</div>
-      {% endfor %}
-    {% endif %}
-  {% endwith %}
-  <h2 class="text-primary">Dashboard</h2>
-  <div class="row mt-4">
-    <div class="col-md-3">
-      <a href="/beds" class="text-decoration-none text-dark">
-        <div class="card p-3 shadow">
-          <h5>Total Beds</h5>
-          <h2>{{ total_beds }}</h2>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="/beds" class="text-decoration-none text-dark">
-        <div class="card p-3 shadow">
-          <h5>Occupied Beds</h5>
-          <h2>{{ occupied }}</h2>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="/patients" class="text-decoration-none text-dark">
-        <div class="card p-3 shadow">
-          <h5>Patients</h5>
-          <h2>{{ patients }}</h2>
-        </div>
-      </a>
-    </div>
-    <div class="col-md-3">
-      <a href="/inventory" class="text-decoration-none text-dark">
-        <div class="card p-3 shadow">
-          <h5>Inventory Items</h5>
-          <h2>{{ total_items }}</h2>
-        </div>
-      </a>
-    </div>
-  </div>
-  <div class="row mt-4">
-    <div class="col-md-6">
-      <div class="card p-3 shadow">
-        <h5>Bed Usage</h5>
-        <canvas id="bedChart" width="400" height="200"></canvas>
-      </div>
-    </div>
-    <div class="col-md-6">
-      <div class="card p-3 shadow">
-        <h5>Quick Actions</h5>
-        <div class="d-flex gap-2">
-          <a class="btn btn-primary" href="/patients">Manage Patients</a>
-          <a class="btn btn-secondary" href="/beds">Manage Beds</a>
-          <a class="btn btn-success" href="/inventory">Inventory</a>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-  const bedChartData = {
-    labels: ['Occupied','Available'],
-    datasets: [{
-      label: 'Beds',
-      data: [{{ bed_chart.occupied }}, {{ bed_chart.available }}],
-      backgroundColor: ['#dc3545','#198754']
-    }]
-  };
-  const ctx = document.getElementById('bedChart').getContext('2d');
-  new Chart(ctx, { type: 'doughnut', data: bedChartData });
+{% extends "layout.html" %}
 
-  const toggle = document.getElementById('darkToggle');
-  toggle.addEventListener('click', () => {
-    document.body.classList.toggle('dark');
-    document.querySelectorAll('.card').forEach(c => c.classList.toggle('dark'));
-    toggle.textContent = document.body.classList.contains('dark') ? 'Light' : 'Dark';
-  });
+{% block title %}Dashboard - Hospital Harmony{% endblock %}
+
+{% block content %}
+
+
+            <div class="border-b border-gray-200 pb-4 mb-6">
+                <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+                <p class="text-gray-600 mt-1">Welcome back, Dr. Mehta</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Beds</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_beds }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Hospital capacity</p>
+                        </div>
+                        <div class="gradient-primary w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-bed text-white text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Occupied Beds</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2">{{ occupied }}</p>
+                            <p class="text-xs text-red-500 mt-1">{{ "%.1f"|format((occupied/total_beds*100) if total_beds > 0 else 0) }}% occupancy</p>
+                        </div>
+                        <div class="gradient-danger w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-hospital-user text-white text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Patients</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2">{{ patients }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Active admissions</p>
+                        </div>
+                        <div class="gradient-success w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-users text-white text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Inventory Items</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-2">{{ total_items }}</p>
+                            <p class="text-xs text-gray-500 mt-1">Total stock</p>
+                        </div>
+                        <div class="gradient-warning w-12 h-12 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-boxes text-white text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Bed Usage Chart -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Bed Usage</h3>
+                    <canvas id="bedChart" class="w-full" style="max-height: 300px;"></canvas>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                    <div class="space-y-3">
+                        <a href="/patients" class="block p-4 border border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-users text-blue-600 text-2xl mr-4"></i>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Manage Patients</p>
+                                        <p class="text-sm text-gray-500">View and update patient records</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </a>
+                        <a href="/beds" class="block p-4 border border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-bed text-green-600 text-2xl mr-4"></i>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Manage Beds</p>
+                                        <p class="text-sm text-gray-500">Track bed availability</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </a>
+                        <a href="/inventory" class="block p-4 border border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <i class="fas fa-boxes text-purple-600 text-2xl mr-4"></i>
+                                    <div>
+                                        <p class="font-semibold text-gray-900">Check Inventory</p>
+                                        <p class="text-sm text-gray-500">Monitor stock levels</p>
+                                    </div>
+                                </div>
+                                <i class="fas fa-chevron-right text-gray-400"></i>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Bed Chart
+    const ctx = document.getElementById('bedChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Occupied', 'Available'],
+            datasets: [{
+                data: [{{ bed_chart.occupied }}, {{ bed_chart.available }}],
+                backgroundColor: ['#ef4444', '#10b981'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: {
+                            size: 14
+                        }
+                    }
+                }
+            }
+        }
+    });
 </script>
-</body>
-</html>
+{% endblock %}

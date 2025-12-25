@@ -59,8 +59,23 @@ def patients():
     db = get_db(); cur = db.cursor()
     cur.execute('SELECT * FROM patients')
     rows = cur.fetchall()
-    return render_template('patients.html', patients=rows)
-
+    
+    # Add these lines to provide stats for the layout
+    cur.execute('SELECT COUNT(*) FROM beds')
+    total_beds = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM beds WHERE status='occupied'")
+    occupied = cur.fetchone()[0]
+    cur.execute('SELECT COUNT(*) FROM staff')
+    staff_count = cur.fetchone()[0]
+    cur.execute('SELECT SUM(quantity) FROM inventory')
+    total_items = cur.fetchone()[0] or 0
+    
+    return render_template('patients.html', 
+                         patients=rows,
+                         total_beds=total_beds,
+                         occupied=occupied,
+                         staff=staff_count,
+                         total_items=total_items)
 @app.route('/patients/add', methods=['POST'])
 @login_required
 def add_patient():
