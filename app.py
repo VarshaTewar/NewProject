@@ -172,6 +172,7 @@ def edit_bed():
     flash('Bed updated successfully','success')
     return redirect(url_for('beds'))
 
+# Add these routes to your app.py file (replace the existing staff routes)
 # Staff
 @app.route('/staff')
 @login_required
@@ -181,38 +182,61 @@ def staff():
     rows = cur.fetchall()
     return render_template('staff.html', staff=rows)
 
+
 @app.route('/staff/add', methods=['POST'])
 @login_required
 def add_staff():
-    name = request.form.get('name'); role = request.form.get('role'); on_duty = 1 if request.form.get('on_duty')=='on' else 0
-    db = get_db(); cur = db.cursor()
-    cur.execute('INSERT INTO staff (name, role, on_duty) VALUES (?,?,?)', (name, role, on_duty))
+    name = request.form.get('name')
+    role = request.form.get('role')
+    speciality = request.form.get('speciality', '')
+    on_duty = 1 if request.form.get('on_duty') == 'on' else 0
+    
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('INSERT INTO staff (name, role, speciality, on_duty) VALUES (?,?,?,?)', 
+                (name, role, speciality, on_duty))
     db.commit()
-    flash('Staff added','success')
+    flash('Staff added successfully', 'success')
+    return redirect(url_for('staff'))
+
+@app.route('/staff/edit/<int:staff_id>', methods=['POST'])
+@login_required
+def edit_staff(staff_id):
+    name = request.form.get('name')
+    role = request.form.get('role')
+    speciality = request.form.get('speciality', '')
+    
+    db = get_db()
+    cur = db.cursor()
+    cur.execute('UPDATE staff SET name=?, role=?, speciality=? WHERE id=?', 
+                (name, role, speciality, staff_id))
+    db.commit()
+    flash('Staff updated successfully', 'success')
     return redirect(url_for('staff'))
 
 @app.route('/staff/toggle/<int:staff_id>', methods=['POST'])
 @login_required
 def toggle_staff(staff_id):
-    db = get_db(); cur = db.cursor()
+    db = get_db()
+    cur = db.cursor()
     cur.execute('SELECT on_duty FROM staff WHERE id=?', (staff_id,))
     row = cur.fetchone()
     if row:
         new = 0 if row['on_duty'] else 1
         cur.execute('UPDATE staff SET on_duty=? WHERE id=?', (new, staff_id))
         db.commit()
-        flash('Staff duty status updated','success')
+        flash('Staff duty status updated', 'success')
     return redirect(url_for('staff'))
 
 @app.route('/staff/delete/<int:staff_id>', methods=['POST'])
 @login_required
 def delete_staff(staff_id):
-    db = get_db(); cur = db.cursor()
+    db = get_db()
+    cur = db.cursor()
     cur.execute('DELETE FROM staff WHERE id=?', (staff_id,))
     db.commit()
-    flash('Staff member removed','info')
+    flash('Staff member removed', 'info')
     return redirect(url_for('staff'))
-
 # Inventory
 @app.route('/inventory')
 @login_required

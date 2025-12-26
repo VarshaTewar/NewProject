@@ -20,6 +20,7 @@ CREATE_TABLES_SQL = [
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
     role TEXT,
+    speciality TEXT,
     on_duty INTEGER DEFAULT 0
 )""",
 """CREATE TABLE IF NOT EXISTS inventory (
@@ -38,7 +39,17 @@ def get_db():
     return _conn
 
 def init_db():
-    db = get_db(); cur = db.cursor()
+    db = get_db()
+    cur = db.cursor()
     for sql in CREATE_TABLES_SQL:
         cur.execute(sql)
+    
+    # Add speciality column to existing staff table if it doesn't exist
+    try:
+        cur.execute("ALTER TABLE staff ADD COLUMN speciality TEXT")
+        db.commit()
+    except sqlite3.OperationalError:
+        # Column already exists
+        pass
+    
     db.commit()

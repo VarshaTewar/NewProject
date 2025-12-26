@@ -85,6 +85,11 @@
                     <div>
                         <h3 class="text-lg font-bold text-gray-900">{{ s['name'] }}</h3>
                         <p class="text-sm text-gray-600">{{ s['role'] }}</p>
+                        {% if s['speciality'] %}
+                        <p class="text-xs text-purple-600 mt-1">
+                            <i class="fas fa-stethoscope mr-1"></i>{{ s['speciality'] }}
+                        </p>
+                        {% endif %}
                         <p class="text-xs text-gray-500 mt-1">ID: #{{ s['id'] }}</p>
                     </div>
                 </div>
@@ -102,15 +107,19 @@
             </div>
 
             <div class="pt-4 border-t border-gray-100">
-                <div class="flex gap-2">
-                    <form action="/staff/toggle/{{ s['id'] }}" method="POST" class="flex-1">
-                        <button type="submit" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="openEditModal({{ s['id'] }}, '{{ s['name']|replace("'", "\\'") }}', '{{ s['role']|replace("'", "\\'") }}', '{{ s['speciality']|replace("'", "\\'") if s['speciality'] else '' }}')" class="bg-purple-50 hover:bg-purple-100 text-purple-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                        <i class="fas fa-edit"></i>
+                        Edit
+                    </button>
+                    <form action="/staff/toggle/{{ s['id'] }}" method="POST" class="contents">
+                        <button type="submit" class="bg-blue-50 hover:bg-blue-100 text-blue-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                             <i class="fas fa-exchange-alt"></i>
-                            Toggle Duty
+                            Toggle
                         </button>
                     </form>
-                    <form action="/staff/delete/{{ s['id'] }}" method="POST" class="flex-1" onsubmit="return confirm('Are you sure you want to remove {{ s['name'] }}?')">
-                        <button type="submit" class="w-full bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                    <form action="/staff/delete/{{ s['id'] }}" method="POST" class="contents" onsubmit="return confirm('Are you sure you want to remove {{ s['name'] }}?')">
+                        <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
                             <i class="fas fa-trash-alt"></i>
                             Remove
                         </button>
@@ -152,6 +161,10 @@
                 <input type="text" name="role" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Doctor, Nurse, Technician">
             </div>
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Speciality</label>
+                <input type="text" name="speciality" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Cardiology, Neurology (for doctors)">
+            </div>
+            <div>
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" name="on_duty" class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                     <span class="text-sm font-medium text-gray-700">Currently On Duty</span>
@@ -163,6 +176,40 @@
                 </button>
                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                     <i class="fas fa-plus mr-1"></i> Add Staff
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Edit Staff Member</h3>
+            <button onclick="document.getElementById('editModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form method="POST" id="editForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <input type="text" name="name" id="editName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter staff name">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                <input type="text" name="role" id="editRole" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Doctor, Nurse, Technician">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Speciality</label>
+                <input type="text" name="speciality" id="editSpeciality" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Cardiology, Neurology (for doctors)">
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-save mr-1"></i> Save Changes
                 </button>
             </div>
         </form>
@@ -190,9 +237,7 @@ function searchStaff() {
     });
 
     // Show/hide empty state
-    const emptyState = document.querySelector('.bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-12.text-center');
-    if (emptyState && visibleCount === 0 && filter !== '') {
-        // Create a "no results" message if it doesn't exist
+    if (visibleCount === 0 && filter !== '') {
         let noResults = document.getElementById('noSearchResults');
         if (!noResults) {
             noResults = document.createElement('div');
@@ -203,7 +248,7 @@ function searchStaff() {
                 <h3 class="text-xl font-semibold text-gray-900 mb-2">No Results Found</h3>
                 <p class="text-gray-600">No staff members match your search criteria</p>
             `;
-            document.querySelector('main').appendChild(noResults);
+            document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-2').after(noResults);
         }
         noResults.style.display = 'block';
     } else {
@@ -214,8 +259,23 @@ function searchStaff() {
     }
 }
 
-// Close modal when clicking outside
+// Open edit modal with staff data
+function openEditModal(id, name, role, speciality) {
+    document.getElementById('editName').value = name;
+    document.getElementById('editRole').value = role;
+    document.getElementById('editSpeciality').value = speciality || '';
+    document.getElementById('editForm').action = '/staff/edit/' + id;
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
+// Close modals when clicking outside
 document.getElementById('addModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.add('hidden');
+    }
+});
+
+document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target === this) {
         this.classList.add('hidden');
     }
