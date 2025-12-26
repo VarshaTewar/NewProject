@@ -1,0 +1,248 @@
+{% extends "layout.html" %}
+
+{% block title %}User Management - Hospital Harmony{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">User Management</h1>
+        <p class="text-gray-600 mt-1">Manage system users and access control</p>
+    </div>
+    <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg flex items-center transition shadow-sm">
+        <i class="fas fa-plus mr-2"></i>
+        Add User
+    </button>
+</div>
+
+<!-- User Stats -->
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-4 mb-6">
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Total Users</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ users|length }}</p>
+            </div>
+            <div class="gradient-primary w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users text-white text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Admins</p>
+                <p class="text-3xl font-bold text-purple-600 mt-2">
+                    {{ users|selectattr('role', 'equalto', 'admin')|list|length }}
+                </p>
+            </div>
+            <div class="bg-purple-100 w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-shield text-purple-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Doctors</p>
+                <p class="text-3xl font-bold text-blue-600 mt-2">
+                    {{ users|selectattr('role', 'equalto', 'doctor')|list|length }}
+                </p>
+            </div>
+            <div class="bg-blue-100 w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-md text-blue-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Staff</p>
+                <p class="text-3xl font-bold text-green-600 mt-2">
+                    {{ users|selectattr('role', 'in', ['nurse', 'receptionist'])|list|length }}
+                </p>
+            </div>
+            <div class="bg-green-100 w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-nurse text-green-600 text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">All Users ({{ users|length }})</h3>
+            <div class="relative w-64">
+                <input type="search" id="searchInput" placeholder="Search users..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onkeyup="searchTable()">
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+            </div>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full" id="usersTable">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% if users %}
+                    {% for u in users %}
+                    <tr class="hover:bg-gray-50 transition">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ u['id'] }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                                    {{ u['username'][0]|upper }}
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">{{ u['username'] }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ u['full_name'] }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if u['role'] == 'admin' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800">
+                                    <i class="fas fa-user-shield mr-1"></i>Admin
+                                </span>
+                            {% elif u['role'] == 'doctor' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    <i class="fas fa-user-md mr-1"></i>Doctor
+                                </span>
+                            {% elif u['role'] == 'nurse' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-user-nurse mr-1"></i>Nurse
+                                </span>
+                            {% elif u['role'] == 'receptionist' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-user-tie mr-1"></i>Receptionist
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ u['role']|title }}
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ u['created_at'][:10] if u['created_at'] else 'N/A' }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <button onclick="alert('Edit user functionality - Coming soon!')" class="text-blue-600 hover:text-blue-800 mr-3 transition">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
+                            <button onclick="alert('Delete user functionality - Coming soon!')" class="text-red-600 hover:text-red-800 transition">
+                                <i class="fas fa-trash mr-1"></i>Delete
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-user-slash text-4xl mb-3 text-gray-300"></i>
+                            <p class="text-lg">No users found</p>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Add New User</h3>
+            <button onclick="document.getElementById('addModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+            <div class="flex">
+                <i class="fas fa-exclamation-triangle text-yellow-600 mr-2 mt-1"></i>
+                <p class="text-sm text-yellow-800">
+                    Add user functionality will be implemented. For now, users can be added directly to the database.
+                </p>
+            </div>
+        </div>
+        <form class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Username *</label>
+                <input type="text" name="username" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter username">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                <input type="text" name="full_name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter full name">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+                <select name="role" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">Select Role</option>
+                    <option value="admin">Admin</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="nurse">Nurse</option>
+                    <option value="receptionist">Receptionist</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password *</label>
+                <input type="password" name="password" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter password">
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="button" onclick="alert('Add user functionality - Coming soon!')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-1"></i> Add User
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function searchTable() {
+    const input = document.getElementById('searchInput');
+    const filter = input.value.toUpperCase();
+    const table = document.getElementById('usersTable');
+    const tr = table.getElementsByTagName('tr');
+
+    for (let i = 1; i < tr.length; i++) {
+        let found = false;
+        const td = tr[i].getElementsByTagName('td');
+        
+        for (let j = 0; j < td.length; j++) {
+            if (td[j]) {
+                const txtValue = td[j].textContent || td[j].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    found = true;
+                    break;
+                }
+            }
+        }
+        
+        tr[i].style.display = found ? '' : 'none';
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('addModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.add('hidden');
+    }
+});
+</script>
+{% endblock %}
