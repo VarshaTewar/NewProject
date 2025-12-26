@@ -160,6 +160,18 @@ def add_bed():
     flash('Bed added','success')
     return redirect(url_for('beds'))
 
+@app.route('/beds/edit', methods=['POST'])
+@login_required
+def edit_bed():
+    bed_id = request.form.get('bed_id')
+    ward = request.form.get('ward')
+    bed_number = request.form.get('bed_number')
+    db = get_db(); cur = db.cursor()
+    cur.execute('UPDATE beds SET ward=?, bed_number=? WHERE id=?', (ward, bed_number, bed_id))
+    db.commit()
+    flash('Bed updated successfully','success')
+    return redirect(url_for('beds'))
+
 # Staff
 @app.route('/staff')
 @login_required
@@ -189,6 +201,16 @@ def toggle_staff(staff_id):
         new = 0 if row['on_duty'] else 1
         cur.execute('UPDATE staff SET on_duty=? WHERE id=?', (new, staff_id))
         db.commit()
+        flash('Staff duty status updated','success')
+    return redirect(url_for('staff'))
+
+@app.route('/staff/delete/<int:staff_id>', methods=['POST'])
+@login_required
+def delete_staff(staff_id):
+    db = get_db(); cur = db.cursor()
+    cur.execute('DELETE FROM staff WHERE id=?', (staff_id,))
+    db.commit()
+    flash('Staff member removed','info')
     return redirect(url_for('staff'))
 
 # Inventory

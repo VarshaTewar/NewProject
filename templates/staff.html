@@ -1,128 +1,155 @@
 {% extends "layout.html" %}
 
-{% block title %}Staff Management - Hospital Harmony{% endblock %}
+{% block title %}Staff - Hospital Harmony{% endblock %}
 
 {% block content %}
-<div class="max-w-7xl mx-auto space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-bold text-gray-900">Staff Management</h1>
-            <p class="text-gray-600 mt-1">Manage hospital staff and schedules</p>
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Staff Management</h1>
+        <p class="text-gray-600 mt-1">Manage hospital staff and schedules</p>
+    </div>
+    <div class="flex items-center gap-3">
+        <div class="relative">
+            <input type="search" id="staffSearchInput" placeholder="Search staff..." class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" onkeyup="searchStaff()">
+            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
         </div>
-        <button onclick="openAddModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 flex items-center gap-2">
-            <i class="fas fa-plus"></i>
+        <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg flex items-center transition shadow-sm">
+            <i class="fas fa-plus mr-2"></i>
             Add Staff
         </button>
     </div>
+</div>
 
-    <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-            <div class="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                <i class="fas fa-user-md text-blue-600 text-xl"></i>
+<!-- Staff Stats -->
+<div class="grid grid-cols-1 gap-6 sm:grid-cols-3 mb-6">
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Total Staff</p>
+                <p class="text-3xl font-bold text-gray-900 mt-2">{{ staff|length }}</p>
+                <p class="text-xs text-gray-500 mt-1">All employees</p>
             </div>
-            <h3 class="text-gray-600 text-sm font-medium mb-2">Total Staff</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ staff|length }}</p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-            <div class="bg-emerald-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                <i class="fas fa-check-circle text-emerald-600 text-xl"></i>
+            <div class="gradient-primary w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user-md text-white text-xl"></i>
             </div>
-            <h3 class="text-gray-600 text-sm font-medium mb-2">On Duty</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ staff|selectattr('on_duty', 'equalto', 1)|list|length }}</p>
-        </div>
-        <div class="bg-white rounded-2xl shadow-lg p-6 hover:shadow-xl transition-all duration-300">
-            <div class="bg-amber-50 w-12 h-12 rounded-xl flex items-center justify-center mb-4">
-                <i class="fas fa-clock text-amber-600 text-xl"></i>
-            </div>
-            <h3 class="text-gray-600 text-sm font-medium mb-2">Off Duty</h3>
-            <p class="text-3xl font-bold text-gray-900">{{ staff|selectattr('on_duty', 'equalto', 0)|list|length }}</p>
         </div>
     </div>
 
-    <!-- Search -->
-    <div class="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-        <div class="relative w-full md:w-96">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-search text-gray-400"></i>
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">On Duty</p>
+                <p class="text-3xl font-bold text-green-600 mt-2">
+                    {{ staff|selectattr('on_duty', 'equalto', 1)|list|length }}
+                </p>
+                <p class="text-xs text-gray-500 mt-1">Currently working</p>
             </div>
-            <input
-                type="search"
-                id="searchInput"
-                placeholder="Search staff..."
-                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                onkeyup="filterStaff()"
-            />
+            <div class="gradient-success w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-check-circle text-white text-xl"></i>
+            </div>
         </div>
     </div>
 
-    <!-- Staff Grid -->
-    {% if staff %}
-    <div id="staffGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {% for s in staff %}
-        {% set initials = s['name'].split()|map('first')|join|upper %}
-        {% set status_class = 'bg-emerald-100 text-emerald-700' if s['on_duty'] else 'bg-amber-100 text-amber-700' %}
-        {% set status_text = 'On Duty' if s['on_duty'] else 'Off Duty' %}
-        <div class="staff-card bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-            <div class="p-6">
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex items-center gap-4">
-                        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
-                            {{ initials }}
-                        </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">{{ s['name'] }}</h3>
-                            <p class="text-sm text-gray-600">{{ s['role'] }}</p>
-                            <p class="text-xs text-gray-500 mt-1">ID: #{{ s['id'] }}</p>
-                        </div>
+    <div class="card-hover bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-600">Off Duty</p>
+                <p class="text-3xl font-bold text-orange-600 mt-2">
+                    {{ staff|selectattr('on_duty', 'equalto', 0)|list|length }}
+                </p>
+                <p class="text-xs text-gray-500 mt-1">Not on shift</p>
+            </div>
+            <div class="gradient-warning w-12 h-12 rounded-lg flex items-center justify-center">
+                <i class="fas fa-clock text-white text-xl"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Staff Grid -->
+{% if staff %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    {% for s in staff %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg transition card-hover">
+        <div class="p-6">
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                        {% set name_parts = s['name'].split() %}
+                        {% if name_parts|length >= 2 %}
+                            {{ name_parts[0][0] }}{{ name_parts[1][0] }}
+                        {% else %}
+                            {{ s['name'][0] }}{{ s['name'][1] if s['name']|length > 1 else '' }}
+                        {% endif %}
                     </div>
-                    <span class="px-3 py-1 rounded-full text-xs font-semibold {{ status_class }}">
-                        {{ status_text }}
-                    </span>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900">{{ s['name'] }}</h3>
+                        <p class="text-sm text-gray-600">{{ s['role'] }}</p>
+                        <p class="text-xs text-gray-500 mt-1">ID: #{{ s['id'] }}</p>
+                    </div>
                 </div>
+                {% if s['on_duty'] == 1 %}
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                        <i class="fas fa-circle text-green-500 mr-1" style="font-size: 6px; vertical-align: middle;"></i>
+                        On Duty
+                    </span>
+                {% else %}
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">
+                        <i class="fas fa-circle text-orange-500 mr-1" style="font-size: 6px; vertical-align: middle;"></i>
+                        Off Duty
+                    </span>
+                {% endif %}
+            </div>
 
-                <div class="flex gap-2 pt-4 border-t border-gray-100">
+            <div class="pt-4 border-t border-gray-100">
+                <div class="flex gap-2">
                     <form action="/staff/toggle/{{ s['id'] }}" method="POST" class="flex-1">
-                        <button type="submit" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 rounded-lg font-medium transition-colors">
-                            <i class="fas fa-exchange-alt mr-2"></i>Toggle Duty
+                        <button type="submit" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-exchange-alt"></i>
+                            Toggle Duty
+                        </button>
+                    </form>
+                    <form action="/staff/delete/{{ s['id'] }}" method="POST" class="flex-1" onsubmit="return confirm('Are you sure you want to remove {{ s['name'] }}?')">
+                        <button type="submit" class="w-full bg-red-50 hover:bg-red-100 text-red-600 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2">
+                            <i class="fas fa-trash-alt"></i>
+                            Remove
                         </button>
                     </form>
                 </div>
             </div>
         </div>
-        {% endfor %}
     </div>
-    {% else %}
-    <!-- Empty State -->
-    <div class="bg-white rounded-2xl shadow-lg p-12 text-center">
-        <i class="fas fa-user-slash text-6xl text-gray-300 mb-4"></i>
-        <h3 class="text-xl font-semibold text-gray-900 mb-2">No Staff Members Found</h3>
-        <p class="text-gray-600 mb-6">Get started by adding your first staff member</p>
-        <button onclick="openAddModal()" class="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-            <i class="fas fa-plus mr-2"></i>Add Staff Member
-        </button>
-    </div>
-    {% endif %}
+    {% endfor %}
 </div>
+{% else %}
+<!-- Empty State -->
+<div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+    <i class="fas fa-user-slash text-6xl text-gray-300 mb-4"></i>
+    <h3 class="text-xl font-semibold text-gray-900 mb-2">No Staff Members Found</h3>
+    <p class="text-gray-600 mb-6">Get started by adding your first staff member</p>
+    <button onclick="document.getElementById('addModal').classList.remove('hidden')" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition shadow-sm">
+        <i class="fas fa-plus mr-2"></i>Add Staff Member
+    </button>
+</div>
+{% endif %}
 
 <!-- Add Staff Modal -->
-<div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50" style="backdrop-filter: blur(4px);">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
-        <div class="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
-            <h2 class="text-2xl font-bold text-gray-900">Add New Staff Member</h2>
-            <button onclick="closeAddModal()" class="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+<div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Add New Staff Member</h3>
+            <button onclick="document.getElementById('addModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
                 <i class="fas fa-times text-xl"></i>
             </button>
         </div>
-        <form action="/staff/add" method="POST" class="p-6 space-y-4">
+        <form method="POST" action="/staff/add" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                <input type="text" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter staff name">
+                <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter staff name">
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-                <input type="text" name="role" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g., Doctor, Nurse, Technician">
+                <input type="text" name="role" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., Doctor, Nurse, Technician">
             </div>
             <div>
                 <label class="flex items-center gap-2 cursor-pointer">
@@ -130,12 +157,12 @@
                     <span class="text-sm font-medium text-gray-700">Currently On Duty</span>
                 </label>
             </div>
-            <div class="flex gap-3 pt-4">
-                <button type="button" onclick="closeAddModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 rounded-xl font-semibold transition-colors">
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
                     Cancel
                 </button>
-                <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-300">
-                    <i class="fas fa-plus mr-2"></i>Add Staff
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <i class="fas fa-plus mr-1"></i> Add Staff
                 </button>
             </div>
         </form>
@@ -145,34 +172,67 @@
 
 {% block scripts %}
 <script>
-    function filterStaff() {
-        const searchInput = document.getElementById('searchInput');
-        const filter = searchInput.value.toUpperCase();
-        const staffCards = document.querySelectorAll('.staff-card');
+// Search staff cards
+function searchStaff() {
+    const input = document.getElementById('staffSearchInput');
+    const filter = input.value.toUpperCase();
+    const staffCards = document.querySelectorAll('.grid.grid-cols-1.lg\\:grid-cols-2 > div');
+    let visibleCount = 0;
 
-        staffCards.forEach(card => {
-            const text = card.textContent || card.innerText;
-            if (text.toUpperCase().indexOf(filter) > -1) {
-                card.style.display = '';
-            } else {
-                card.style.display = 'none';
-            }
-        });
-    }
-
-    function openAddModal() {
-        document.getElementById('addModal').classList.remove('hidden');
-    }
-
-    function closeAddModal() {
-        document.getElementById('addModal').classList.add('hidden');
-    }
-
-    // Close modal when clicking outside
-    document.getElementById('addModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeAddModal();
+    staffCards.forEach(card => {
+        const text = card.textContent || card.innerText;
+        if (text.toUpperCase().indexOf(filter) > -1) {
+            card.style.display = '';
+            visibleCount++;
+        } else {
+            card.style.display = 'none';
         }
     });
+
+    // Show/hide empty state
+    const emptyState = document.querySelector('.bg-white.rounded-xl.shadow-sm.border.border-gray-100.p-12.text-center');
+    if (emptyState && visibleCount === 0 && filter !== '') {
+        // Create a "no results" message if it doesn't exist
+        let noResults = document.getElementById('noSearchResults');
+        if (!noResults) {
+            noResults = document.createElement('div');
+            noResults.id = 'noSearchResults';
+            noResults.className = 'bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center';
+            noResults.innerHTML = `
+                <i class="fas fa-search text-6xl text-gray-300 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No Results Found</h3>
+                <p class="text-gray-600">No staff members match your search criteria</p>
+            `;
+            document.querySelector('main').appendChild(noResults);
+        }
+        noResults.style.display = 'block';
+    } else {
+        const noResults = document.getElementById('noSearchResults');
+        if (noResults) {
+            noResults.style.display = 'none';
+        }
+    }
+}
+
+// Close modal when clicking outside
+document.getElementById('addModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.add('hidden');
+    }
+});
+
+// Add confirmation for toggle duty status
+document.querySelectorAll('form[action^="/staff/toggle/"]').forEach(form => {
+    form.addEventListener('submit', function(e) {
+        const staffCard = this.closest('.bg-white');
+        const staffName = staffCard.querySelector('h3').textContent;
+        const currentStatus = staffCard.querySelector('span.rounded-full').textContent.trim();
+        const newStatus = currentStatus.includes('On Duty') ? 'Off Duty' : 'On Duty';
+        
+        if (!confirm(`Change ${staffName}'s status to ${newStatus}?`)) {
+            e.preventDefault();
+        }
+    });
+});
 </script>
 {% endblock %}
