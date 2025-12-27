@@ -207,7 +207,6 @@ def export_patients():
     resp.headers['Content-Disposition'] = 'attachment; filename=patients_report.csv'
     resp.headers['Content-Type'] = 'text/csv'
     return resp
-
 # Beds
 @app.route('/beds')
 @login_required
