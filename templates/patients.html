@@ -34,12 +34,14 @@
         <table class="w-full" id="patientsTable">
             <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient ID</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Age</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission Reason</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bed Assignment</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Admission Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned Bed</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diagnosis</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
@@ -47,7 +49,7 @@
                 {% if patients %}
                     {% for p in patients %}
                     <tr class="hover:bg-gray-50 transition">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ p['id'] }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#P-{{ p['id'] }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <div class="flex items-center">
                                 <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -68,7 +70,9 @@
                                 {{ p['gender'] if p['gender'] else 'N/A' }}
                             {% endif %}
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">{{ p['admission_reason'] if p['admission_reason'] else 'N/A' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                            {{ p['admission_date'] if p['admission_date'] else 'N/A' }}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             {% if p['bed_id'] %}
                                 <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
@@ -80,7 +84,34 @@
                                 </a>
                             {% endif %}
                         </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">{{ p['admission_reason'] if p['admission_reason'] else 'N/A' }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if p['status'] == 'Critical' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                    Critical
+                                </span>
+                            {% elif p['status'] == 'Stable' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    Stable
+                                </span>
+                            {% elif p['status'] == 'Recovering' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Recovering
+                                </span>
+                            {% elif p['status'] == 'Under Observation' %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Under Observation
+                                </span>
+                            {% else %}
+                                <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                    {{ p['status'] if p['status'] else 'N/A' }}
+                                </span>
+                            {% endif %}
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
+                            <button onclick="openEditModal({{ p['id'] }}, '{{ p['name']|replace("'", "\\'") }}', {{ p['age'] or 'null' }}, '{{ p['gender']|replace("'", "\\'") if p['gender'] else '' }}', '{{ p['admission_reason']|replace("'", "\\'") if p['admission_reason'] else '' }}', '{{ p['admission_date'] if p['admission_date'] else '' }}', '{{ p['status']|replace("'", "\\'") if p['status'] else 'Stable' }}')" class="text-blue-600 hover:text-blue-800 transition">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </button>
                             <form method="POST" action="/patients/discharge/{{ p['id'] }}" class="inline" onsubmit="return confirm('Are you sure you want to discharge {{ p['name'] }}?')">
                                 <button type="submit" class="text-red-600 hover:text-red-800 transition">
                                     <i class="fas fa-sign-out-alt mr-1"></i>Discharge
@@ -91,7 +122,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                        <td colspan="9" class="px-6 py-12 text-center text-gray-500">
                             <i class="fas fa-user-slash text-4xl mb-3 text-gray-300"></i>
                             <p class="text-lg">No patients found</p>
                             <p class="text-sm">Click "Add Patient" to register a new patient</p>
@@ -105,7 +136,7 @@
 
 <!-- Add Patient Modal -->
 <div id="addModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-4">
             <h3 class="text-xl font-bold text-gray-900">Add New Patient</h3>
             <button onclick="document.getElementById('addModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
@@ -113,15 +144,17 @@
             </button>
         </div>
         <form method="POST" action="/patients/add" class="space-y-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter patient name">
-            </div>
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter patient name">
+                </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
                     <input type="number" name="age" min="0" max="150" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Age">
                 </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
                     <select name="gender" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -130,10 +163,23 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Admission Date *</label>
+                    <input type="date" name="admission_date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
             </div>
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Admission Reason</label>
-                <textarea name="admission_reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Reason for admission"></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                <select name="status" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="Stable">Stable</option>
+                    <option value="Critical">Critical</option>
+                    <option value="Recovering">Recovering</option>
+                    <option value="Under Observation">Under Observation</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis / Admission Reason</label>
+                <textarea name="admission_reason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Reason for admission or diagnosis"></textarea>
             </div>
             <div class="flex justify-end space-x-3 pt-4">
                 <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
@@ -146,10 +192,75 @@
         </form>
     </div>
 </div>
+
+<!-- Edit Patient Modal -->
+<div id="editModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-xl font-bold text-gray-900">Edit Patient</h3>
+            <button onclick="document.getElementById('editModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        <form method="POST" id="editForm" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
+                    <input type="text" name="name" id="editName" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                    <input type="number" name="age" id="editAge" min="0" max="150" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                    <select name="gender" id="editGender" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Admission Date *</label>
+                    <input type="date" name="admission_date" id="editAdmissionDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status *</label>
+                <select name="status" id="editStatus" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="Stable">Stable</option>
+                    <option value="Critical">Critical</option>
+                    <option value="Recovering">Recovering</option>
+                    <option value="Under Observation">Under Observation</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Diagnosis / Admission Reason</label>
+                <textarea name="admission_reason" id="editAdmissionReason" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+                    Cancel
+                </button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    <i class="fas fa-save mr-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Set today's date as default for admission date
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.querySelector('input[name="admission_date"]').value = today;
+});
+
 function searchTable() {
     const input = document.getElementById('searchInput');
     const filter = input.value.toUpperCase();
@@ -174,8 +285,25 @@ function searchTable() {
     }
 }
 
+function openEditModal(id, name, age, gender, reason, admissionDate, status) {
+    document.getElementById('editName').value = name;
+    document.getElementById('editAge').value = age || '';
+    document.getElementById('editGender').value = gender || 'Male';
+    document.getElementById('editAdmissionReason').value = reason || '';
+    document.getElementById('editAdmissionDate').value = admissionDate || '';
+    document.getElementById('editStatus').value = status || 'Stable';
+    document.getElementById('editForm').action = '/patients/edit/' + id;
+    document.getElementById('editModal').classList.remove('hidden');
+}
+
 // Close modal when clicking outside
 document.getElementById('addModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.classList.add('hidden');
+    }
+});
+
+document.getElementById('editModal').addEventListener('click', function(e) {
     if (e.target === this) {
         this.classList.add('hidden');
     }

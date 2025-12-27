@@ -15,6 +15,8 @@ CREATE_TABLES_SQL = [
     age INTEGER,
     gender TEXT,
     admission_reason TEXT,
+    admission_date DATE DEFAULT CURRENT_DATE,
+    status TEXT DEFAULT 'Stable',
     bed_id INTEGER,
     FOREIGN KEY(bed_id) REFERENCES beds(id)
 )""",
@@ -57,6 +59,19 @@ def init_db():
     cur = db.cursor()
     for sql in CREATE_TABLES_SQL:
         cur.execute(sql)
+    
+    # Add admission_date and status columns to existing patients table if they don't exist
+    try:
+        cur.execute("ALTER TABLE patients ADD COLUMN admission_date DATE DEFAULT CURRENT_DATE")
+        db.commit()
+    except sqlite3.OperationalError:
+        pass
+    
+    try:
+        cur.execute("ALTER TABLE patients ADD COLUMN status TEXT DEFAULT 'Stable'")
+        db.commit()
+    except sqlite3.OperationalError:
+        pass
     
     # Add speciality column to existing staff table if it doesn't exist
     try:

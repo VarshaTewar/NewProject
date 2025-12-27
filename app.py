@@ -117,11 +117,16 @@ def patients():
 @login_required
 @role_required('patients')
 def add_patient():
-    name = request.form.get('name'); age = request.form.get('age')
-    gender = request.form.get('gender'); reason = request.form.get('admission_reason')
+    name = request.form.get('name')
+    age = request.form.get('age')
+    gender = request.form.get('gender')
+    reason = request.form.get('admission_reason')
+    admission_date = request.form.get('admission_date')
+    status = request.form.get('status', 'Stable')
+    
     db = get_db(); cur = db.cursor()
-    cur.execute('INSERT INTO patients (name, age, gender, admission_reason, bed_id) VALUES (?,?,?,?,NULL)', 
-                (name, age, gender, reason))
+    cur.execute('INSERT INTO patients (name, age, gender, admission_reason, admission_date, status, bed_id) VALUES (?,?,?,?,?,?,NULL)', 
+                (name, age, gender, reason, admission_date, status))
     db.commit()
     flash('Patient added successfully', 'success')
     return redirect(url_for('patients'))
@@ -163,19 +168,38 @@ def discharge(pid):
     flash('Patient discharged successfully', 'info')
     return redirect(url_for('patients'))
 
+@app.route('/patients/edit/<int:pid>', methods=['POST'])
+@login_required
+@role_required('patients')
+def edit_patient(pid):
+    name = request.form.get('name')
+    age = request.form.get('age')
+    gender = request.form.get('gender')
+    reason = request.form.get('admission_reason')
+    admission_date = request.form.get('admission_date')
+    status = request.form.get('status', 'Stable')
+    
+    db = get_db(); cur = db.cursor()
+    cur.execute('UPDATE patients SET name=?, age=?, gender=?, admission_reason=?, admission_date=?, status=? WHERE id=?', 
+                (name, age, gender, reason, admission_date, status, pid))
+    db.commit()
+    flash('Patient updated successfully', 'success')
+    return redirect(url_for('patients'))
+
 @app.route('/export/patients')
 @login_required
 @role_required('export')
 def export_patients():
     db = get_db(); cur = db.cursor()
-    cur.execute('SELECT id, name, age, gender, admission_reason, bed_id FROM patients')
+    cur.execute('SELECT id, name, age, gender, admission_reason, admission_date, status, bed_id FROM patients')
     rows = cur.fetchall()
     output = []
-    header = ['id','name','age','gender','admission_reason','bed_id']
+    header = ['id','name','age','gender','admission_reason','admission_date','status','bed_id']
     output.append(','.join(header))
     for r in rows:
         vals = [str(r['id']), r['name'] or '', str(r['age'] or ''), 
-                r['gender'] or '', r['admission_reason'] or '', str(r['bed_id'] or '')]
+                r['gender'] or '', r['admission_reason'] or '', 
+                r['admission_date'] or '', r['status'] or '', str(r['bed_id'] or '')]
         safe = ['"%s"' % v.replace('"','""') for v in vals]
         output.append(','.join(safe))
     csv_data = '\n'.join(output)
@@ -353,6 +377,103 @@ def users():
     cur.execute('SELECT id, username, role, full_name, created_at FROM users')
     rows = cur.fetchall()
     return render_template('users.html', users=rows)
+
+@app.route('/users/add', methods=['POST'])
+@login_required
+@role_required('manage_users')
+def add_user():
+    from database import hash_password
+    
+    username = request.form.get('username')
+    full_name = request.form.get('full_name')
+    role = request.form.get('role')
+    password = request.form.get('password')
+    
+    if not all([username, full_name, role, password]):
+        flash('All fields are required', 'danger')
+        return redirect(url_for('users'))
+    
+    db = get_db(); cur = db.cursor()
+    
+    # Check if username already exists
+    cur.execute('SELECT id FROM users WHERE username = ?', (username,))
+    if cur.fetchone():
+        flash('Username already exists', 'danger')
+        return redirect(url_for('users'))
+    
+    password_hash = hash_password(password)
+    cur.execute('INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)',
+                (username, password_hash, role, full_name))
+    db.commit()
+    flash(f'User {username} added successfully', 'success')
+    return redirect(url_for('users'))
+
+@app.route('/users/edit/<int:user_id>', methods=['POST'])
+@login_required
+@role_required('manage_users')
+def edit_user(user_id):
+    from database import hash_password
+    
+    username = request.form.get('username')
+    full_name = request.form.get('full_name')
+    role = request.form.get('role')
+    password = request.form.get('password')
+    
+    if not all([username, full_name, role]):
+        flash('Username, full name, and role are required', 'danger')
+        return redirect(url_for('users'))
+    
+    # Don't allow editing yourself to prevent lockout
+    if user_id == session.get('user_id'):
+        flash('You cannot edit your own account', 'danger')
+        return redirect(url_for('users'))
+    
+    db = get_db(); cur = db.cursor()
+    
+    # Check if username already exists for another user
+    cur.execute('SELECT id FROM users WHERE username = ? AND id != ?', (username, user_id))
+    if cur.fetchone():
+        flash('Username already exists', 'danger')
+        return redirect(url_for('users'))
+    
+    # Update user info
+    if password:
+        # If password provided, update it too
+        password_hash = hash_password(password)
+        cur.execute('UPDATE users SET username=?, full_name=?, role=?, password_hash=? WHERE id=?',
+                    (username, full_name, role, password_hash, user_id))
+    else:
+        # Only update username, full_name, and role
+        cur.execute('UPDATE users SET username=?, full_name=?, role=? WHERE id=?',
+                    (username, full_name, role, user_id))
+    
+    db.commit()
+    flash(f'User {username} updated successfully', 'success')
+    return redirect(url_for('users'))
+
+@app.route('/users/delete/<int:user_id>', methods=['POST'])
+@login_required
+@role_required('manage_users')
+def delete_user(user_id):
+    # Don't allow deleting yourself
+    if user_id == session.get('user_id'):
+        flash('You cannot delete your own account', 'danger')
+        return redirect(url_for('users'))
+    
+    db = get_db(); cur = db.cursor()
+    
+    # Get username before deleting
+    cur.execute('SELECT username FROM users WHERE id = ?', (user_id,))
+    user = cur.fetchone()
+    
+    if not user:
+        flash('User not found', 'danger')
+        return redirect(url_for('users'))
+    
+    cur.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    db.commit()
+    flash(f'User {user["username"]} deleted successfully', 'info')
+    return redirect(url_for('users'))
 
 # Context processor to make role permissions available in templates
 @app.context_processor
